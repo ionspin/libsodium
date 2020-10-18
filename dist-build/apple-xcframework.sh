@@ -14,6 +14,8 @@ export WATCHOS64_32_PREFIX="${PREFIX}/tmp/watchos64_32"
 export WATCHOS_SIMULATOR_ARM64_PREFIX="${PREFIX}/tmp/watchos-simulator-arm64"
 export WATCHOS_SIMULATOR_I386_PREFIX="${PREFIX}/tmp/watchos-simulator-i386"
 export WATCHOS_SIMULATOR_X86_64_PREFIX="${PREFIX}/tmp/watchos-simulator-x86_64"
+export TVOS64_PREFIX="$PREFIX/tmp/tvos64"
+export TVOS_SIMULATOR64_PREFIX="$PREFIX/tmp/tvos-simulator-x86_64"
 export CATALYST_ARM64_PREFIX="${PREFIX}/tmp/catalyst-arm64"
 export CATALYST_X86_64_PREFIX="${PREFIX}/tmp/catalyst-x86_64"
 export LOG_FILE="${PREFIX}/tmp/build_log"
@@ -24,6 +26,9 @@ export IOS_SIMULATOR_VERSION_MIN=${IOS_SIMULATOR_VERSION_MIN-"9.0.0"}
 export IOS_VERSION_MIN=${IOS_VERSION_MIN-"9.0.0"}
 export WATCHOS_SIMULATOR_VERSION_MIN=${WATCHOS_SIMULATOR_VERSION_MIN-"4.0.0"}
 export WATCHOS_VERSION_MIN=${WATCHOS_VERSION_MIN-"4.0.0"}
+export TVOS_SIMULATOR_VERSION_MIN=${IOS_SIMULATOR_VERSION_MIN-9.0}
+export TVOS_VERSION_MIN=${IOS_VERSION_MIN-9.0}
+
 
 echo
 echo "Warnings related to headers being present but not usable are due to functions"
@@ -203,6 +208,44 @@ build_watchos_simulator() {
   make -j${PROCESSORS} install || exit 1
 }
 
+build_tvos() {
+  export BASEDIR="${XCODEDIR}/Platforms/AppleTVOS.platform/Developer"
+  export PATH="${BASEDIR}/usr/bin:$BASEDIR/usr/sbin:$PATH"
+  export SDK="${BASEDIR}/SDKs/AppleTVOS.sdk"
+  
+  ## 64-bit tvOS
+  export CFLAGS="-O2 -arch arm64 -isysroot ${SDK} -mtvos-version-min=${TVOS_VERSION_MIN} -flto -fembed-bitcode"
+  export LDFLAGS="-arch arm64 -isysroot ${SDK} -mtvos-version-min=${TVOS_VERSION_MIN} -flto"
+  
+  make distclean > /dev/null
+  
+  ./configure --host=arm-apple-darwin10 \
+            --disable-shared \
+            ${LIBSODIUM_ENABLE_MINIMAL_FLAG} \
+            --prefix="$TVOS64_PREFIX" || exit 1
+            
+  make -j${PROCESSORS} install || exit 1
+}
+
+build_tvos_simulator() {
+  export BASEDIR="${XCODEDIR}/Platforms/AppleTVSimulator.platform/Developer"
+  export PATH="${BASEDIR}/usr/bin:$BASEDIR/usr/sbin:$PATH"
+  export SDK="${BASEDIR}/SDKs/AppleTVSimulator.sdk"
+  
+  ## x86_64 simulator
+  export CFLAGS="-O2 -arch x86_64 -isysroot ${SDK} -mtvos-simulator-version-min=${TVOS_SIMULATOR_VERSION_MIN} -flto"
+  export LDFLAGS="-arch x86_64 -isysroot ${SDK} -mtvos-simulator-version-min=${TVOS_SIMULATOR_VERSION_MIN} -flto"
+  
+  make distclean > /dev/null
+  
+  ./configure --host=x86_64-apple-darwin10 \
+  --disable-shared \
+  --enable-minimal \
+  --prefix="$TVOS_SIMULATOR64_PREFIX"
+  
+  make -j${PROCESSORS} install || exit 1
+}
+
 build_catalyst() {
   export BASEDIR="${XCODEDIR}/Platforms/MacOSX.platform/Developer"
   export PATH="${BASEDIR}/usr/bin:$BASEDIR/usr/sbin:$PATH"
@@ -242,6 +285,10 @@ echo "Building for the watchOS simulator..."
 build_watchos_simulator >"$LOG_FILE" 2>&1 || exit 1
 echo "Building for Catalyst..."
 build_catalyst >"$LOG_FILE" 2>&1 || exit 1
+echo "Building tvOS"
+build_tvos > "$LOG_FILE" 2>&1 || exit 1
+echo "Building tvOS simulator"
+build_tvos_simulator > "$LOG_FILE" 2>&1 || exit 1
 
 echo "Adding the Clibsodium module map for Swift..."
 
@@ -326,6 +373,16 @@ for ext in a dylib; do
       -output "${PREFIX}/watchos-simulators/lib/libsodium.${ext}"
   fi
 done
+
+echo "Bundling tvOS targets..."
+mkdir -p "${PREFIX}/tvos/include"
+cp -a "${TVOS64_PREFIX}/include" "${PREFIX}/tvos"
+cp -a "${TVOS64_PREFIX}/lib" "${PREFIX}/tvos/"
+
+echo "Bundling tvOS simulators..."
+mkdir -p "${PREFIX}/tvos-simulators/include"
+cp -a "${TVOS_SIMULATOR64_PREFIX}/include" "${PREFIX}/tvos-simulators"
+cp -a "${TVOS_SIMULATOR64_PREFIX}/lib" "${PREFIX}/tvos-simulators/"
 
 echo "Bundling Catalyst targets..."
 
