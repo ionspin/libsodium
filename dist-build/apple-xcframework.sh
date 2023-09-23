@@ -333,8 +333,9 @@ echo "Building for watchOS..."
 build_watchos >"$LOG_FILE" 2>&1 || exit 1
 echo "Building for tvOS..."
 build_tvos >"$LOG_FILE" 2>&1 || exit 1
-echo "Building for visionOS..."
-build_visionos >"$LOG_FILE" 2>&1 || exit 1
+echo "Skipping visionOS"
+#echo "Building for visionOS..."
+#build_visionos >"$LOG_FILE" 2>&1 || exit 1
 echo "Building for Catalyst..."
 build_catalyst >"$LOG_FILE" 2>&1 || exit 1
 
@@ -345,8 +346,9 @@ if [ -z "$LIBSODIUM_SKIP_SIMULATORS" ]; then
   build_watchos_simulator >"$LOG_FILE" 2>&1 || exit 1
   echo "Building for the tvOS simulator..."
   build_tvos_simulator >"$LOG_FILE" 2>&1 || exit 1
-  echo "Building for the visionOS simulator..."
-  build_visionos_simulator >"$LOG_FILE" 2>&1 || exit 1
+  echo "Skipping visionOS simulator"
+#  echo "Building for the visionOS simulator..."
+#  build_visionos_simulator >"$LOG_FILE" 2>&1 || exit 1
 else
   echo "[Skipping the simulators]"
 fi
@@ -408,15 +410,16 @@ for ext in a dylib; do
     -output "$PREFIX/tvos/lib/libsodium.${ext}"
 done
 
-echo "Bundling visionOS targets..."
+echo "Skipping bundling visionOS targets"
+#echo "Bundling visionOS targets..."
 
-mkdir -p "${PREFIX}/visionos/lib"
-cp -a "${VISIONOS_PREFIX}/include" "${PREFIX}/visionos/"
-for ext in a dylib; do
-  lipo -create \
-    "$VISIONOS_PREFIX/lib/libsodium.${ext}" \
-    -output "$PREFIX/visionos/lib/libsodium.${ext}"
-done
+#mkdir -p "${PREFIX}/visionos/lib"
+#cp -a "${VISIONOS_PREFIX}/include" "${PREFIX}/visionos/"
+#for ext in a dylib; do
+#  lipo -create \
+#    "$VISIONOS_PREFIX/lib/libsodium.${ext}" \
+#    -output "$PREFIX/visionos/lib/libsodium.${ext}"
+#done
 
 echo "Bundling Catalyst targets..."
 
@@ -494,17 +497,18 @@ if [ -z "$LIBSODIUM_SKIP_SIMULATORS" ]; then
     fi
   done
 
-  echo "Bundling visionOS simulators..."
+  echo "Skipping bundling visionOS simulators"
+#  echo "Bundling visionOS simulators..."
 
-  mkdir -p "${PREFIX}/visionos-simulators/lib"
-  cp -a "${VISIONOS_SIMULATOR_PREFIX}/include" "${PREFIX}/visionos-simulators/"
-  for ext in a dylib; do
-    if [ "$APPLE_SILICON_SUPPORTED" = "true" ]; then
-      lipo -create \
-        "${VISIONOS_SIMULATOR_PREFIX}/lib/libsodium.${ext}" \
-        -output "${PREFIX}/visionos-simulators/lib/libsodium.${ext}" || exit 1
-    fi
-  done
+#  mkdir -p "${PREFIX}/visionos-simulators/lib"
+#  cp -a "${VISIONOS_SIMULATOR_PREFIX}/include" "${PREFIX}/visionos-simulators/"
+#  for ext in a dylib; do
+#    if [ "$APPLE_SILICON_SUPPORTED" = "true" ]; then
+#      lipo -create \
+#        "${VISIONOS_SIMULATOR_PREFIX}/lib/libsodium.${ext}" \
+#        -output "${PREFIX}/visionos-simulators/lib/libsodium.${ext}" || exit 1
+#    fi
+#  done
 fi
 
 echo "Creating Clibsodium.xcframework..."
@@ -512,12 +516,12 @@ echo "Creating Clibsodium.xcframework..."
 rm -rf "${PREFIX}/Clibsodium.xcframework"
 
 XCFRAMEWORK_ARGS=""
-for f in macos ios watchos tvos visionos catalyst; do
+for f in macos ios watchos tvos catalyst; do
   XCFRAMEWORK_ARGS="${XCFRAMEWORK_ARGS} -library ${PREFIX}/${f}/lib/libsodium.a"
   XCFRAMEWORK_ARGS="${XCFRAMEWORK_ARGS} -headers ${PREFIX}/${f}/include"
 done
 if [ -z "$LIBSODIUM_SKIP_SIMULATORS" ]; then
-  for f in ios-simulators watchos-simulators tvos-simulators visionos-simulators; do
+  for f in ios-simulators watchos-simulators tvos-simulators; do
     XCFRAMEWORK_ARGS="${XCFRAMEWORK_ARGS} -library ${PREFIX}/${f}/lib/libsodium.a"
     XCFRAMEWORK_ARGS="${XCFRAMEWORK_ARGS} -headers ${PREFIX}/${f}/include"
   done
