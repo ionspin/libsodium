@@ -80,7 +80,8 @@ if [ "$(echo "$IOS_SIMULATOR_VERSION_MIN" | cut -d'.' -f1)" -lt "11" ]; then
 fi
 
 VISIONOS_SUPPORTED=false
-[ -d "${XCODEDIR}/Platforms/XROS.platform" ] && VISIONOS_SUPPORTED=true
+echo "Skipping visionOS"
+#[ -d "${XCODEDIR}/Platforms/XROS.platform" ] && VISIONOS_SUPPORTED=true
 
 NPROCESSORS=$(getconf NPROCESSORS_ONLN 2>/dev/null || getconf _NPROCESSORS_ONLN 2>/dev/null)
 PROCESSORS=${NPROCESSORS:-3}
